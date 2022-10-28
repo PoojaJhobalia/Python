@@ -1,0 +1,84 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn import metrics
+import matplotlib.pyplot as plt
+# import datetime
+from datetime import datetime
+
+
+df = pd.read_csv('RainHoustonAll.csv')
+df.head()
+
+df['newDate'] = df['DATE'].apply(lambda x: datetime.strptime(x[:10], "%m/%d/%Y").strftime("%m/%d/%Y"))
+
+df.head()
+
+%matplotlib inline
+df.plot.scatter(x='DATE',y='PRCP')
+
+df.plot.scatter(x='TAVG',y='PRCP')
+
+df.plot.scatter(x='AWND',y='PRCP')
+
+len(df.index)
+
+#create binary precipitation variable
+df.loc[df['PRCP'] <= 0, 'RAIN'] = 0
+df.loc[df['PRCP'] > 0, 'RAIN'] = 1
+
+df.head()
+
+if DATE in ():
+	season = 'winter'
+elif month in ('April', 'May', 'June'):
+	season = 'spring'
+elif month in ('July', 'August', 'September'):
+	season = 'summer'
+else:
+	season = 'autumn'
+    
+
+
+#creating a vector of dataframes.
+X = df[['AWND', 'TAVG', 'TMAX', 'TMIN', 'WDF2', 'WDF5', 'WSF2']]
+y = df['RAIN']
+
+#create testing and training sets using scaled vars
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3)
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+#instantiate the model
+log_regression = LogisticRegression()
+
+#fit the model using the training data
+log_regression.fit(X_train,y_train)
+
+#use model to make predictions on test data
+y_pred = log_regression.predict(X_test)
+
+#confusion Matrix
+cnf_matrix = metrics.confusion_matrix(y_test, y_pred)
+cnf_matrix
+
+
+#True positive predictions: 68 
+#True negative predictions: 13
+#False positive predictions: 20
+#False negative predictions: 9
+
+print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
+
+#define metrics
+y_pred_proba = log_regression.predict_proba(X_test)[::,1]
+fpr, tpr, _ = metrics.roc_curve(y_test,  y_pred_proba)
+auc = metrics.roc_auc_score(y_test, y_pred_proba)
+
+#create ROC curve(Radar's receiver operator curve - submarine not whale) 
+plt.plot(fpr,tpr,label="AUC="+str(auc))
+plt.legend(loc=4)
+plt.show()
